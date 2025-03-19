@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: weka
+---
+spring:
+  profile: local
+  datasource:
+    url: jdbc:postgresql://localhost:5432/
+    username: postgres
+    password: 1234
+    test-on-borrow: true
+    validation-query: SELECT 1 FROM dual
+  jpa:
+    show-sql: true
+    hibernate:
+      format-sql: true
+      ddl-auto: none

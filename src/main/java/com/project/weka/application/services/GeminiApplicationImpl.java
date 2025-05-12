@@ -22,15 +22,17 @@ public class GeminiApplicationImpl implements GeminiApplication {
   private String apiUrl;
 
   @Override
-  public String getText(String patient) {
+  public String getText(String promt) {
     try {
+          log.info("API---> "+apiKey);
+     log.info("API---> "+apiUrl);
       URL url = new URL(apiUrl + apiKey);
       HttpURLConnection conn = (HttpURLConnection) url.openConnection();
       conn.setRequestMethod("POST");
       conn.setRequestProperty("Content-Type", "application/json");
       conn.setDoOutput(true);
 
-      String prompt = String.format(patient
+      String prompt = String.format(promt
             /*
             "Paciente con Glucosa: %.1f mg/dL, Presión Arterial: %.1f mmHg, IMC: %.1f kg/m², Edad: %d años. ¿Cuáles son los 3 principales consejos de salud?",
             patient.getPlas(), patient.getPres(), patient.getMass(), patient.getAge()*/

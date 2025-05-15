@@ -2,6 +2,6 @@ package com.project.weka.application.input.port;
 
 public interface GeminiApplication {
 
-  String getText(String patient);
+  String getText(String promt);
 
 }

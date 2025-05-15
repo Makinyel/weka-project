@@ -24,19 +24,14 @@ public class GeminiApplicationImpl implements GeminiApplication {
   @Override
   public String getText(String promt) {
     try {
-          log.info("API---> "+apiKey);
-     log.info("API---> "+apiUrl);
+
       URL url = new URL(apiUrl + apiKey);
       HttpURLConnection conn = (HttpURLConnection) url.openConnection();
       conn.setRequestMethod("POST");
       conn.setRequestProperty("Content-Type", "application/json");
       conn.setDoOutput(true);
 
-      String prompt = String.format(promt
-            /*
-            "Paciente con Glucosa: %.1f mg/dL, Presión Arterial: %.1f mmHg, IMC: %.1f kg/m², Edad: %d años. ¿Cuáles son los 3 principales consejos de salud?",
-            patient.getPlas(), patient.getPres(), patient.getMass(), patient.getAge()*/
-      );
+      String prompt = String.format(promt);
 
       String requestBody = "{\"contents\":[{\"parts\":[{\"text\":\"" + prompt + "\"}]}]}";
       conn.getOutputStream().write(requestBody.getBytes(StandardCharsets.UTF_8));
@@ -64,7 +59,7 @@ public class GeminiApplicationImpl implements GeminiApplication {
       }
       return "No se pudo obtener un consejo.";
     } catch (Exception e) {
-      System.out.println(("❌ Error obteniendo consejo de IA: " + e.getMessage()));
+      System.out.println(("Error obteniendo consejo de IA: " + e.getMessage()));
       return "No se pudo obtener un consejo en este momento.";
     }
   }

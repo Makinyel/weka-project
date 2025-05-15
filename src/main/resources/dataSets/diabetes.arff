@@ -20,7 +20,7 @@
 %        Computer Society Press.
 % 
 %        The diagnostic, binary-valued variable investigated is whether the
-%        patient shows signs of diabetes according to World Health Organization
+%        LoanRequest shows signs of diabetes according to World Health Organization
 %        criteria (i.e., if the 2 hour post-load plasma glucose was at least 
 %        200 mg/dl at any survey  examination or if found during routine medical
 %        care).   The population lives near Phoenix, Arizona, USA.
@@ -32,7 +32,7 @@
 % 
 % 4. Relevant Information:
 %       Several constraints were placed on the selection of these instances from
-%       a larger database.  In particular, all patients here are females at
+%       a larger database.  In particular, all LoanRequests here are females at
 %       least 21 years old of Pima Indian heritage.  ADAP is an adaptive learning
 %       routine that generates and executes digital analogs of perceptron-like
 %       devices.  It is a unique algorithm; see the paper for details.

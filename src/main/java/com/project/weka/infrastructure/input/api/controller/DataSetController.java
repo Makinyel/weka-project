@@ -1,9 +1,9 @@
 package com.project.weka.infrastructure.input.api.controller;
 
 import com.project.weka.application.input.port.LoadDataSetApplication;
-import com.project.weka.application.input.port.PredictIsDiabetesApplication;
+import com.project.weka.application.input.port.PredicLoadApplication;
 import com.project.weka.application.services.GeminiApplicationImpl;
-import com.project.weka.domain.model.Patient;
+import com.project.weka.domain.model.LoadRequest;
 import com.project.weka.domain.model.PredictionResult;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +23,7 @@ public class DataSetController {
   @Autowired
   private LoadDataSetApplication loadDataSetApplicationImpl;
   @Autowired
-  private PredictIsDiabetesApplication predictIsDiabetesApplicationImpl;
+  private PredicLoadApplication predictIsDiabetesApplicationImpl;
   @Autowired
   private GeminiApplicationImpl geminiApplicationImpl;
 
@@ -33,13 +33,13 @@ public class DataSetController {
   }
 
   @PostMapping("/predic")
-  public ResponseEntity<PredictionResult> predict(@RequestBody Patient patient) {
-    return ResponseEntity.ok(predictIsDiabetesApplicationImpl.predict(patient));
+  public ResponseEntity<PredictionResult> predict(@RequestBody LoadRequest LoanRequest) {
+    return ResponseEntity.ok(predictIsDiabetesApplicationImpl.predict(LoanRequest));
   }
 
   @PostMapping("/predicJ48")
-  public ResponseEntity<PredictionResult> predictUsingJ48(@RequestBody Patient patient) {
-    return ResponseEntity.ok(predictIsDiabetesApplicationImpl.predictUsingJ48(patient));
+  public ResponseEntity<PredictionResult> predictUsingJ48(@RequestBody LoadRequest LoanRequest) {
+    return ResponseEntity.ok(predictIsDiabetesApplicationImpl.predictUsingJ48(LoanRequest));
   }
 
   @PostMapping("/ia")

@@ -33,7 +33,7 @@ public class DataSetController {
   }
 
   @PostMapping("/predic")
-  public ResponseEntity<PredictionResult> predict(@RequestBody LoadRequest LoanRequest) {
+  public ResponseEntity<Double> predict(@RequestBody LoadRequest LoanRequest) {
     return ResponseEntity.ok(predictIsDiabetesApplicationImpl.predict(LoanRequest));
   }
 

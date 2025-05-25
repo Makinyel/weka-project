@@ -18,7 +18,6 @@ public class LoadModelApplicationImpl implements LoadModelApplication {
 
     @Override
     public Classifier loadModel(String url) throws Exception{
-        log.info("Intentando cargar modelo desde la URL: {}", url);
         InputStream modelStream = getClass().getResourceAsStream(url);
 
         if (modelStream == null) {
@@ -40,5 +39,12 @@ public class LoadModelApplicationImpl implements LoadModelApplication {
         }
     }
       
+    /*public Classifier loadModel(String url) throws Exception {
+    InputStream modelStream = getClass().getResourceAsStream(url);
+    if (modelStream == null) {
+        throw new IllegalArgumentException("No se pudo encontrar el archivo del modelo en: " + url);
+    }
+    return (Classifier) weka.core.SerializationHelper.read(modelStream);
+} */
 }
 

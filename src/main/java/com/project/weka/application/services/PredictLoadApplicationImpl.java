@@ -1,17 +1,23 @@
 package com.project.weka.application.services;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import com.project.weka.application.input.port.PredicLoadApplication;
 import com.project.weka.domain.model.LoadRequest;
 import com.project.weka.domain.model.PredictionResult;
+
 import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import lombok.extern.log4j.Log4j2;
 import weka.classifiers.Classifier;
-import weka.classifiers.trees.RandomForest;
+import weka.classifiers.functions.LinearRegression;
 import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
+import weka.filters.Filter;
+import weka.filters.supervised.attribute.NominalToBinary;
 
+@Log4j2
 @AllArgsConstructor
 @Service
 public class PredictLoadApplicationImpl implements PredicLoadApplication {
@@ -24,48 +30,64 @@ public class PredictLoadApplicationImpl implements PredicLoadApplication {
   private GeminiApplicationImpl geminiApplicationImpl;
   
   @Override
-  public PredictionResult predict(LoadRequest LoanRequest) {
+  public double predict(LoadRequest loanRequest) {
     String dataSetUrl = "dataSets/load_approval.arff";
-    Instances data = loadDataSetApplicationImpl.getInstanceDataForm(dataSetUrl);
-    PredictionResult result = new PredictionResult();
+    String modelUrl = "/models/loanAmountLinearRegression.model";
 
     try {
-      Instance newInstance = new DenseInstance(data.numAttributes());
-      newInstance.setDataset(data);
+        // Cargar dataset base para obtener estructura y definir clase
+        Instances data = loadDataSetApplicationImpl.getInstanceDataForm(dataSetUrl);
+        data.setClassIndex(5);
 
-      newInstance.setValue(1, LoanRequest.getNoOfDependents());
-      newInstance.setValue(2, LoanRequest.getEducation());
-      newInstance.setValue(3, LoanRequest.getSelfEmployed());
-      newInstance.setValue(4, LoanRequest.getIncomeAnnum());
-      newInstance.setValue(5, LoanRequest.getLoanAmount());
-      newInstance.setValue(6, LoanRequest.getLoanTerm());
-      newInstance.setValue(7, LoanRequest.getCibilScore());
-      newInstance.setValue(8, LoanRequest.getResidentialAssetsValue());
-      newInstance.setValue(9, LoanRequest.getCommercialAssetsValue());
-      newInstance.setValue(10, LoanRequest.getLuxuryAssetsValue());
-      newInstance.setValue(11, LoanRequest.getBankAssetValue());
+        // Configurar filtro NominalToBinary igual que en entrenamiento
+        NominalToBinary nominalToBinary = new NominalToBinary();
+        nominalToBinary.setInputFormat(data);
 
-      Classifier classifier = new RandomForest();
-      classifier.buildClassifier(data);
+        // Filtrar dataset para obtener la estructura transformada
+        Instances filteredData = Filter.useFilter(data, nominalToBinary);
 
-      double predictionIndex = classifier.classifyInstance(newInstance);
-      String predictionClass = data.classAttribute().value((int) predictionIndex);
-      double probability = classifier.distributionForInstance(newInstance)[(int) predictionIndex];
+        // Crear instancia nueva con la estructura filtrada
+        Instance newInstance = new DenseInstance(filteredData.numAttributes());
+        newInstance.setDataset(filteredData);
 
-      result.setPrediction(predictionClass);
-      result.setProbability(probability);
+        // Setear valores en newInstance (los índices corresponden a atributos antes de filtro)
+        // IMPORTANTE: Los atributos nominales deben estar con los valores originales, el filtro se aplica después
+        newInstance.setValue(filteredData.attribute("_no_of_dependents"), loanRequest.getNoOfDependents());
+        newInstance.setValue(filteredData.attribute("_education"), loanRequest.getEducation());
+        newInstance.setValue(filteredData.attribute("_self_employed"), loanRequest.getSelfEmployed());
+        newInstance.setValue(filteredData.attribute("_income_annum"), loanRequest.getIncomeAnnum());
+        newInstance.setMissing(filteredData.attribute("_loan_amount")); // atributo objetivo
+        newInstance.setValue(filteredData.attribute("_loan_term"), loanRequest.getLoanTerm());
+        newInstance.setValue(filteredData.attribute("_cibil_score"), loanRequest.getCibilScore());
+        newInstance.setValue(filteredData.attribute("_residential_assets_value"), loanRequest.getResidentialAssetsValue());
+        newInstance.setValue(filteredData.attribute("_commercial_assets_value"), loanRequest.getCommercialAssetsValue());
+        newInstance.setValue(filteredData.attribute("_luxury_assets_value"), loanRequest.getLuxuryAssetsValue());
+        newInstance.setValue(filteredData.attribute("_bank_asset_value"), loanRequest.getBankAssetValue());
+
+        // Aplicar el filtro NominalToBinary a la instancia antes de predecir
+        nominalToBinary.input(newInstance);
+        Instance filteredInstance = nominalToBinary.output();
+
+        // Cargar modelo
+        Classifier model = loadModelApplicationImpl.loadModel(modelUrl);
+
+        if (!(model instanceof LinearRegression)) {
+            throw new IllegalStateException("El modelo cargado no es de tipo LinearRegression");
+        }
+
+        // Predecir con la instancia filtrada
+        return model.classifyInstance(filteredInstance);
 
     } catch (Exception e) {
-      e.printStackTrace();
+        log.error("Error durante la predicción de préstamo", e);
+        return Double.NaN;
     }
-
-    return result;
-  }
+}
 
   @Override
   public PredictionResult predictUsingJ48(LoadRequest loadRequest) {
     String dataSetUrl = "dataSets/load_approval.arff";
-    String modelUrl = "/models/zeroRModel.model";
+    String modelUrl = "/models/LoanApprovalJ48.model";
     Instances data = loadDataSetApplicationImpl.getInstanceDataForm(dataSetUrl);
     PredictionResult result = new PredictionResult();
 
@@ -91,16 +113,24 @@ public class PredictLoadApplicationImpl implements PredicLoadApplication {
       String predictionClass = data.classAttribute().value((int) predictionIndex);
       double probability = model.distributionForInstance(newInstance)[(int) predictionIndex];
 
-      System.out.println("¿Su prestamo será aprobado? \n" + (predictionIndex == 1.0 ? "Sí" : "No"));
+      log.info("¿Su prestamo será aprobado? \n" + (predictionIndex == 1.0 ? "Sí" : "No"));
       result.setPrediction(predictionClass);
       result.setProbability(probability * 100);
 
+      String adviceIA;
+
       if (predictionIndex == 1.0) {
-        String adviceIA = geminiApplicationImpl.getText(
+          adviceIA = geminiApplicationImpl.getText(
             "Brinda un consejo empático y motivador a una persona que ha sido aprobada para un prestamo."
-                + "El consejo debe ser sencillo y corto no mas de 20 palabras");
+                + "El consejo debe ser sencillo y corto no mas de 45 palabras");
         result.setAdvice(adviceIA);
-        System.out.println("Consejo --> " + adviceIA);
+        log.info("Consejo --> " + adviceIA);
+      } else{
+
+         adviceIA = geminiApplicationImpl.getText(
+            "Brinda un consejo empático y motivador a una persona que le ha negado un prestamo."
+                + "El consejo debe ser sencillo y corto no mas de 45 palabras");
+        result.setAdvice(adviceIA);
       }
 
 

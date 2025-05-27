@@ -1,0 +1,14 @@
+version: "3.9"
+services:
+  weka:
+    image: weka
+    container_name: weka-container
+    ports:
+      - "8080:8080"
+    networks:
+      - spring-network
+
+networks:
+  spring-network:
+volumes:
+  weka-volume:

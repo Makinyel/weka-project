@@ -3,6 +3,7 @@ package com.project.weka.infrastructure.input.api.controller;
 import com.project.weka.application.input.port.LoadDataSetApplication;
 import com.project.weka.application.input.port.PredicLoadApplication;
 import com.project.weka.application.services.GeminiApplicationImpl;
+import com.project.weka.domain.model.AmountPrediction;
 import com.project.weka.domain.model.LoadRequest;
 import com.project.weka.domain.model.PredictionResult;
 import lombok.AllArgsConstructor;
@@ -33,7 +34,7 @@ public class DataSetController {
   }
 
   @PostMapping("/predic")
-  public ResponseEntity<Double> predict(@RequestBody LoadRequest LoanRequest) {
+  public ResponseEntity<String> predict(@RequestBody LoadRequest LoanRequest) {
     return ResponseEntity.ok(predictIsDiabetesApplicationImpl.predict(LoanRequest));
   }
 

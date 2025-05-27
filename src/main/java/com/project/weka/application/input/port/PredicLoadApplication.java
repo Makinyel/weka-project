@@ -5,7 +5,7 @@ import com.project.weka.domain.model.PredictionResult;
 
 public interface PredicLoadApplication {
 
-  double predict(LoadRequest LoanRequest);
+  String predict(LoadRequest LoanRequest);
 
   PredictionResult predictUsingJ48(LoadRequest LoanRequest);
 }

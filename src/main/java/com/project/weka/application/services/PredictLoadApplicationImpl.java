@@ -1,5 +1,8 @@
 package com.project.weka.application.services;
 
+import java.text.NumberFormat;
+import java.util.Locale;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -10,12 +13,9 @@ import com.project.weka.domain.model.PredictionResult;
 import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import weka.classifiers.Classifier;
-import weka.classifiers.functions.LinearRegression;
 import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
-import weka.filters.Filter;
-import weka.filters.supervised.attribute.NominalToBinary;
 
 @Log4j2
 @AllArgsConstructor
@@ -30,59 +30,50 @@ public class PredictLoadApplicationImpl implements PredicLoadApplication {
   private GeminiApplicationImpl geminiApplicationImpl;
   
   @Override
-  public double predict(LoadRequest loanRequest) {
+  public String predict(LoadRequest loanRequest) {
     String dataSetUrl = "dataSets/load_approval.arff";
     String modelUrl = "/models/loanAmountLinearRegression.model";
 
     try {
-        // Cargar dataset base para obtener estructura y definir clase
+        // Cargar dataset (estructura)
         Instances data = loadDataSetApplicationImpl.getInstanceDataForm(dataSetUrl);
-        data.setClassIndex(5);
+        // Definir índice de la clase (loanAmount)
+        data.setClassIndex(data.attribute("_loan_amount").index());
 
-        // Configurar filtro NominalToBinary igual que en entrenamiento
-        NominalToBinary nominalToBinary = new NominalToBinary();
-        nominalToBinary.setInputFormat(data);
-
-        // Filtrar dataset para obtener la estructura transformada
-        Instances filteredData = Filter.useFilter(data, nominalToBinary);
-
-        // Crear instancia nueva con la estructura filtrada
-        Instance newInstance = new DenseInstance(filteredData.numAttributes());
-        newInstance.setDataset(filteredData);
-
-        // Setear valores en newInstance (los índices corresponden a atributos antes de filtro)
-        // IMPORTANTE: Los atributos nominales deben estar con los valores originales, el filtro se aplica después
-        newInstance.setValue(filteredData.attribute("_no_of_dependents"), loanRequest.getNoOfDependents());
-        newInstance.setValue(filteredData.attribute("_education"), loanRequest.getEducation());
-        newInstance.setValue(filteredData.attribute("_self_employed"), loanRequest.getSelfEmployed());
-        newInstance.setValue(filteredData.attribute("_income_annum"), loanRequest.getIncomeAnnum());
-        newInstance.setMissing(filteredData.attribute("_loan_amount")); // atributo objetivo
-        newInstance.setValue(filteredData.attribute("_loan_term"), loanRequest.getLoanTerm());
-        newInstance.setValue(filteredData.attribute("_cibil_score"), loanRequest.getCibilScore());
-        newInstance.setValue(filteredData.attribute("_residential_assets_value"), loanRequest.getResidentialAssetsValue());
-        newInstance.setValue(filteredData.attribute("_commercial_assets_value"), loanRequest.getCommercialAssetsValue());
-        newInstance.setValue(filteredData.attribute("_luxury_assets_value"), loanRequest.getLuxuryAssetsValue());
-        newInstance.setValue(filteredData.attribute("_bank_asset_value"), loanRequest.getBankAssetValue());
-
-        // Aplicar el filtro NominalToBinary a la instancia antes de predecir
-        nominalToBinary.input(newInstance);
-        Instance filteredInstance = nominalToBinary.output();
-
-        // Cargar modelo
+        // Cargar modelo de regresión lineal
         Classifier model = loadModelApplicationImpl.loadModel(modelUrl);
 
-        if (!(model instanceof LinearRegression)) {
-            throw new IllegalStateException("El modelo cargado no es de tipo LinearRegression");
-        }
+        // Crear nueva instancia con estructura del dataset
+        Instance newInstance = new DenseInstance(data.numAttributes());
+        newInstance.setDataset(data);
 
-        // Predecir con la instancia filtrada
-        return model.classifyInstance(filteredInstance);
+        // Setear atributos en la instancia
+        newInstance.setValue(data.attribute("_education"), loanRequest.getEducation());
+        newInstance.setValue(data.attribute("_self_employed"), loanRequest.getSelfEmployed());
+        newInstance.setValue(data.attribute("_income_annum"), loanRequest.getIncomeAnnum());
+        // Como la clase es loanAmount, se deja missing para predecir
+        newInstance.setMissing(data.classIndex());
+        newInstance.setValue(data.attribute("_loan_term"), loanRequest.getLoanTerm());
+        newInstance.setValue(data.attribute("_cibil_score"), loanRequest.getCibilScore());
+        newInstance.setValue(data.attribute("_residential_assets_value"), loanRequest.getResidentialAssetsValue());
+        newInstance.setValue(data.attribute("_commercial_assets_value"), loanRequest.getCommercialAssetsValue());
+        newInstance.setValue(data.attribute("_luxury_assets_value"), loanRequest.getLuxuryAssetsValue());
+        newInstance.setValue(data.attribute("_bank_asset_value"), loanRequest.getBankAssetValue());
+
+        // Predecir el valor numérico (loanAmount)
+        double predictedLoanAmount = model.classifyInstance(newInstance);
+
+        String formattedAmount = String.format(Locale.US, "%.2f", predictedLoanAmount);
+
+        log.info("Monto del préstamo predicho (formateado): " + formattedAmount);
+
+        return formattedAmount;
 
     } catch (Exception e) {
-        log.error("Error durante la predicción de préstamo", e);
-        return Double.NaN;
+        log.error("Error al predecir el monto del préstamo", e);
+        return "00000"; // Retornar un valor por defecto en caso de error
     }
-}
+  }
 
   @Override
   public PredictionResult predictUsingJ48(LoadRequest loadRequest) {
